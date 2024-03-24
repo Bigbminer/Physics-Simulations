@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reflection and Refraction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border: 1px solid #999;
+            border-radius: 4px;
+            cursor: default;
+        }
+
+        p {
+            text-align: center;
+            color: #666;
+        }
+
+        .input-container {
+            margin-bottom: 10px;
+            width: fit-content;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 25% 25% 25% 25%;
+            grid-auto-rows: auto;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .input-field {
+            width: 100px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .btn-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-right: 10px;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        #simulationCanvas {
+            width: 100%;
+            max-width: 600px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .formatInputs{
+            border: 1px solid black;
+            border-radius: 5px;
+            display: grid;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Reflection and Refraction</h1>
+        <div class="input-container">
+            <div class="formatInputs">
+                <label for="RI1" id="slider1">Refractive Index of Medium One: 2</label>
+                <input type="range" id="RI1" name="RI1" min="0" max="10.0" step="0.1"
+                    oninput="mediumValues(true, this)">
+            </div>
+            <div class="formatInputs">
+                <label for="RI2" id="slider2">Refractive Index of Medium Two: 1.5</label>
+                <input type="range" id="RI2" name="RI2" min="0" max="10.0" step="0.1"
+                    oninput="mediumValues(false, this)">
+            </div>
+            <div class="formatInputs">
+                <label for="entryAngle" id="entryAngleLabel">Entry Angle: 45º</label>
+                <input type="range" id="entryAngle" name="entryAngle" min="0" max="90" step="0.01" oninput="entryAngleFunc(this)">
+            </div>
+            <div class="formatInputs">
+                <label for="exitAngle" id="exitAngleLabel">Exit Angle: 45º</label>
+            </div>
+        </div>
+        <canvas id="simulationCanvas" width="600" height="400"></canvas>
+        <p>This is a basic example of a ray path between mediums simulation. Drag the rays and change the refractive
+            index</p>
+        <p style="color: red; font-size: medium; display: inline;">Disclaimer:</p>
+        <p style="color: #666; display: inline;">The UI was generated using generative inteligence. The simulation itself was made without the assistence of Artificial Inteligence.</p>
+        <div class="btn-container">
+            <button class="btn" onclick="simulate()">Simulate</button>
+            <button class="btn" onclick="goToHomePage()">Back to Home</button>
+        </div>
+    </div>
+
+    <script>
+        doc = document;
+        var rI1 = 2;
+        var rI2 = 1.5;
+        mediumTop = new mediumObj(2, 0, 0, 600, 200);
+        mediumBot = new mediumObj(1.5, 0, 200, 600, 400);
+        fLine = new rayCast(50, 50, 300, 200, false);
+        lLine = new rayCast(300, 200, 400, 300, true);
+        fLine.setAngle(45);
+        fAngle = new angle(fLine.getAngle() * 1, -90, 50, 300, 200);
+        fAngle.setAngle(90 - fLine.getAngle());
+        lAngle = new angle(90 - lLine.getAngle() * 1, 90, 50, 300, 200, true);
+        var angleOff;
+        var entryAngleVar;
+
+
+        function mediumValues(isTop, medium) {
+            if (isTop) {
+                rI1 = medium.value;
+                doc.getElementById("slider1").innerHTML = "Refractive Index of Medium One: " + rI1;
+                mediumTop.setRI(rI1);
+                doc.getElementById("exitAngleLabel").innerHTML = "Exit Angle: " + Math.round(angleOff * 100) / 100 + "º";
+            } else {
+                rI2 = medium.value;
+                doc.getElementById("slider2").innerHTML = "Refractive Index of Medium Two: " + rI2;
+                mediumBot.setRI(rI2);
+                doc.getElementById("exitAngleLabel").innerHTML = "Exit Angle: " + Math.round(angleOff * 100) / 100 + "º";
+            }
+        }
+
+        function entryAngleFunc(angleParent){
+            fLine.setAngle(90 - angleParent.value);
+            fAngle.setAngle(angleParent.value * 1);
+            doc.getElementById("entryAngleLabel").innerHTML = "Entry Angle: " + Math.round(fAngle.getAngle() * 1000) / 1000 + "º";
+            doc.getElementById("exitAngleLabel").innerHTML = "Exit Angle: " + Math.round(angleOff * 100) / 100 + "º";
+        }
+
+        function goToHomePage() {
+            window.location.href = "index.html";
+        }
+
+        function rayCast(initX, initY, finX, finY, origin) {
+            this.initX = initX;
+            this.initY = initY;
+            this.finX = finX;
+            this.finY = finY;
+            this.origin = origin
+            this.length = Math.sqrt(((this.finY - this.initY) ** 2) + ((this.finX - this.initX) ** 2));
+            if (this.origin) {
+                //if true set the angle to be the start of ray
+                this.angle = Math.asin((this.finX - this.initX) / this.length) * (180.0 / Math.PI);
+            } else {
+                //if false set the angle to be the end of ray
+                this.angle = Math.asin((this.finY - this.initY) / this.length) * (180.0 / Math.PI);
+            }
+
+
+            //getters
+            this.getAngle = function () {
+                return this.angle;
+            }
+
+            this.getLength = function () {
+                return this.length;
+            }
+
+            this.getOrigin = function () {
+                //gets the origin this boolean determines which side is fixed in place. (left == true && right == false)
+                return this.origin;
+            }
+
+            //setters
+            this.setOrigin = function (origin) {
+                //sets the origin this boolean to determing which side is fixed in place. (left == true && right == false)
+                this.origin = origin;
+                if (this.origin) {
+                    //if true set the angle to be the start of ray
+                    this.angle = Math.asin((this.finX - this.initX) / this.length) * (180.0 / Math.PI);
+                } else {
+                    //if false set the angle to be the end of ray
+                    this.angle = Math.asin((this.finY - this.initY) / this.length) * (180.0 / Math.PI);
+                }
+            }
+
+            this.setAngle = function (angle) {
+                //sets the angle and the values based on the origin so I don't have to write it every time.
+                this.angle = angle;
+                if (this.origin) {
+                    //if true move along the left point (starting pos of the ray stationary)
+                    this.finX = (Math.sin(this.angle * (Math.PI / 180)) * this.length) + this.initX;
+                    this.finY = (Math.cos(this.angle * (Math.PI / 180)) * this.length) + this.initY;
+
+                } else {
+                    //if false move along the right point (ending pos of the ray is stationary)
+                    this.initX = this.finX - (Math.cos(this.angle * (Math.PI / 180)) * this.length);
+                    this.initY = this.finY - (Math.sin(this.angle * (Math.PI / 180)) * this.length);
+                }
+            }
+
+            this.setLength = function (length) {
+                //sets the length of the ray and changes the pos relative to the origin and length.
+                this.length = length;
+                if (this.origin) {
+                    this.finX = (Math.sin(this.angle * (Math.PI / 180)) * this.length) - this.initX;
+                    this.finY = (Math.cos(this.angle * (Math.PI / 180)) * this.length) - this.initY;
+                } else {
+                    this.initX = this.finX - (Math.cos(this.angle * (Math.PI / 180)) * this.length);
+                    this.initY = this.finY - (Math.sin(this.angle * (Math.PI / 180)) * this.length);
+                }
+            }
+
+            //Canvas stuff
+            this.drawSelf = function () {
+                const canvas = document.getElementById('simulationCanvas');
+                const ctx = canvas.getContext('2d');
+                ctx.beginPath();
+                ctx.moveTo(this.initX, this.initY);
+                ctx.lineTo(this.finX, this.finY);
+                ctx.stroke();
+
+            }
+
+
+        }
+
+        function mediumObj(rI, initX, initY, finX, finY) {
+            this.rI = rI;
+            this.initX = initX;
+            this.initY = initY;
+            this.finX = finX;
+            this.finY = finY;
+
+            //getters
+            this.getWidth = function () {
+                return this.finX - this.initX;
+            }
+
+            this.getHeight = function () {
+                return this.finY - this.initY;
+            }
+
+            this.getRI = function () {
+                return this.rI;
+            }
+
+            //setters
+            this.setRI = function (RI) {
+                this.rI = RI;
+            }
+
+            //Canvas stuff
+            this.drawSelf = function () {
+                const canvas = document.getElementById('simulationCanvas');
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = "rgba(100, 100, 255," + (this.rI / 30) + ")";
+                ctx.fillRect(this.initX, this.initY, this.finX - this.initX, this.finY - this.initY);
+                ctx.strokeRect(this.initX, this.initY, this.finX - this.initX, this.finY - this.initY);
+
+            }
+        }
+
+        function angle(angle, angleStart, radius, initX, initY) {
+            this.angle = angle;
+            this.radius = radius;
+            this.initX = initX;
+            this.initY = initY;
+            this.angleStart = angleStart;
+
+            //setters
+            this.setAngle = function (angle) {
+                this.angle = angle;
+            }
+
+            //getters
+            this.getAngle = function () {
+                return (this.angle);
+            }
+            this.drawSelf = function () {
+                const canvas = document.getElementById('simulationCanvas');
+                const ctx = canvas.getContext('2d');
+                ctx.beginPath();
+                ctx.strokeStyle = "black";
+                if (this.angle <= 0) {
+                    ctx.arc(this.initX, this.initY, this.radius, this.angleStart * (Math.PI / 180), (this.angleStart * (Math.PI / 180)) + (this.angle * (Math.PI / 180)) * -1, false);
+                } else {
+                    ctx.arc(this.initX, this.initY, this.radius, this.angleStart * (Math.PI / 180), (this.angleStart * (Math.PI / 180)) + (this.angle * (Math.PI / 180)) * -1, true);
+                }
+                //ctx.arcTo(300, 150, 250, 100, 50);
+                ctx.stroke();
+                ctx.strokeStyle = "black";
+            }
+
+        }
+
+        function simulate() {
+            const canvas = document.getElementById('simulationCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Your ray tracing simulation logic goes here
+            iteration = setInterval(Update, 100);
+            fLine.drawSelf();
+            mediumTop.drawSelf();
+            count = 0;
+        }
+
+        function Update() {
+            const canvas = document.getElementById('simulationCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            //draw mediums
+            mediumTop.drawSelf();
+            mediumBot.drawSelf();
+            //draw normal
+            ctx.beginPath();
+            ctx.moveTo(300, 100);
+            ctx.lineTo(300, 300);
+            ctx.strokeStyle = "green";
+            ctx.stroke();
+            ctx.strokeStyle = "black";
+            fLine.drawSelf();
+            fAngle.drawSelf();
+            drawRefraction();
+
+
+
+            /*if(count >= (1000 / 500) * 5){
+                console.log("stopped");
+                clearInterval(iteration);
+            }*/
+            //console.log(count);
+            count++;
+        }
+
+        //Angle of Incedents
+        function drawRefraction() {
+            angleOff = Math.asin((((mediumTop.getRI() * (Math.sin((90 - fLine.getAngle()) * (Math.PI / 180))) * (180 / Math.PI)) / mediumBot.getRI()) * (Math.PI / 180))) * (180 / Math.PI);
+            lLine.setAngle(angleOff);
+            lAngle.setAngle(angleOff * 1);
+            lLine.drawSelf();
+            lAngle.drawSelf();
+            if(angleOff <= 0 || angleOff >= 90 || angleOff + "" == NaN + ""){
+                drawReflected();
+            }
+        }
+
+        //reflected angle
+        function drawReflected(){
+            rLine = new rayCast(300 + (Math.cos((fLine.getAngle()) * (Math.PI / 180)) * fLine.getLength()), 200 - (Math.sin((fLine.getAngle()) * (Math.PI / 180)) * fLine.getLength()), 300, 200, false);
+            rAngle = new angle(-90 + rLine.getAngle() * 1, -90, 50, 300, 200);
+            rLine.drawSelf();
+            rAngle.drawSelf();
+        }
+
+
+    </script>
+</body>
+
+</html>

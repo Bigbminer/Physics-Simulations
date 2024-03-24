@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radioactive Decay Simulation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border: 1px solid #999;
+            border-radius: 4px;
+        }
+
+        p {
+            text-align: center;
+            color: #666;
+        }
+
+        .input-container {
+            margin-bottom: 10px;
+            width: fit-content;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .btn-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        #inputGrid {
+            display: grid;
+            grid-template-columns: auto auto auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Radioactive Decay Simulation</h1>
+        <div id="inputGrid">
+            <div class="input-container">
+                <label class="input-label">Initial Quantity (Atoms):</label>
+                <input type="number" class="input-field" id="initialQuantity" value="1000">
+            </div>
+            <div class="input-container">
+                <label class="input-label">Half-Life (seconds):</label>
+                <input type="number" class="input-field" id="halfLife" value="10">
+            </div>
+            <div class="input-container">
+                <label id="speedLabel" class="input-label">Speed (Ticks per second):</label>
+                <input type="range" class="input-field" id="speed" min="0.5" max="3.0" step="0.5" value="1.0" oninput="tickSpeed(this)">
+            </div>
+            <div class="input-container">
+                <label id="time" class="input-label">Time (Seconds):</label>
+                <input type="number" class="input-field" id="timeValue" value="0" onchange="setTime(this)">
+            </div>
+        </div>
+        <canvas id="decayCanvas" width="600" height="400"></canvas>
+        <p>This simulation visually represents the process of radioactive decay.</p>
+        <div class="btn-container">
+            <button class="btn" onclick="startButton()">Start Simulation</button>
+            <button class="btn" id="pause/play" onclick="pauseDecay()">Pause</button>
+            <button class="btn" onclick="goToHomePage()">Back to Home</button>
+        </div>
+    </div>
+
+    <script>
+        function goToHomePage() {
+            window.location.href = "index.html"; // Replace index.html with your home page URL
+        }
+
+        doc = document;
+        var intervalSpeed = 100;
+        var stepSpeed = 1.0;
+        var paused = false;
+        let mass = 0;
+        let time = 0;
+        let massEquation = "";
+
+        //canvas vars
+        let initialMass = parseInt(document.getElementById('initialQuantity').value);
+        let halfLife = parseFloat(document.getElementById('halfLife').value);
+        let canvas = document.getElementById('decayCanvas');
+        let ctx = canvas.getContext('2d');
+
+        function tickSpeed(parent){
+            stepSpeed = parent.value;
+            doc.getElementById("speedLabel").innerHTML = "Speed (Ticks Per Second):\n" + parent.value;
+        }
+
+        function setTime(t){
+            time = t.value * 10 / 10;
+        }
+
+        function startButton() {
+            //canvas vars
+            initialMass = parseInt(document.getElementById('initialQuantity').value);
+            halfLife = parseFloat(document.getElementById('halfLife').value);
+            canvas = document.getElementById('decayCanvas');
+            ctx = canvas.getContext('2d');
+            mass = initialMass;
+            time = 0;
+            interval = setInterval(startDecay, intervalSpeed);
+        }
+
+        function massGraph() {
+            let a = initialMass;
+            let b = Math.E;
+            let lambda = Math.LN2 / halfLife;
+            mass = a * (b ** (-lambda * time));
+
+            //axis
+            ctx.fillStyle = "black";
+            ctx.beginPath();
+            ctx.moveTo(30, 20);
+            ctx.lineTo(30, 370);
+            ctx.lineTo(260, 370);
+            ctx.stroke();
+
+            //function
+            
+            ctx.moveTo(30, 370 - 350 * (a * (b ** (-lambda * time)) / initialMass));
+            ctx.beginPath();
+            for(i = 0; i < time; i += 1){
+                
+                ctx.fillStyle = "black";
+                ctx.lineTo(30 + ((230 * (i / time))), 370 - 350 * (a * (b ** (-lambda * i)) / initialMass));
+                //console.log(30 + ((230 * (i / time))));
+                ctx.stroke();
+            }
+            activityGraph();
+            
+            //Point
+            ctx.textAlign = "center";
+            ctx.font = "10px ariel";
+            ctx.moveTo(260, 370 - 350 * ((mass) / initialMass));
+            ctx.fillText("(" + Math.round(time * 10) / 10 + ", " + Math.round(mass * 10) / 10 + ")", 260, 380 - 350 * ((mass) / initialMass));
+
+            //Equation
+            ctx.font = "15px ariel";
+            ctx.textAlign = "start";
+            ctx.fillText("mass = " + a + " * " + Math.round(b * 10) / 10, 100, 20);
+            massEquation = a + " * " + Math.round(b * 10) / 10;
+            var equationLength = ctx.measureText("mass = " + a + " * " + Math.round(b * 10) / 10).width;
+            ctx.font = "8px ariel";
+            ctx.fillText("-" + Math.round(lambda * 100) / 100 + " * time", 100 + equationLength, 10);
+
+            //Labels
+            ctx.font = "15px ariel";
+            ctx.textAlign = "center";
+            ctx.fillText("m", 10, 185);
+            ctx.fillText("time", 130, 395);
+        }
+
+        function activityGraph() {
+            //let b = Math.E;
+            ctx.clearRect(300, 0, canvas.width - 300, canvas.height);
+            let lambda = Math.LN2 / halfLife;
+            let a = initialMass;
+            let b = Math.E;
+            /*let a = initialMass * lambda;
+            mass = a * (b ** (-lambda * time));*/
+            let activity = lambda * mass;
+            let initialActivity = lambda * initialMass;
+
+            //axis
+            ctx.fillStyle = "black";
+            ctx.beginPath();
+            ctx.moveTo(330, 20);
+            ctx.lineTo(330, 370);
+            ctx.lineTo(560, 370);
+            ctx.stroke();
+
+            //function
+             
+            ///*ctx.moveTo(30, 370 - 350 * (a * (b ** (-lambda * time)) / initialMass));
+            ctx.beginPath();
+            for(i = 0; i < time; i += 1){
+                ctx.fillStyle = "black";
+                ctx.lineTo(330 + ((230 * (i / time))), 370 - 350 * ((a * (b ** (-lambda * i)) * lambda) / initialActivity));
+                //console.log(i);
+                ctx.stroke();
+                
+            }
+            
+            //Point
+            ctx.textAlign = "center";
+            ctx.font = "10px ariel";
+            ctx.moveTo(260, 370 - 350 * ((mass) / initialMass));
+            ctx.fillText("(" + Math.round(time * 10) / 10 + ", " + Math.round(activity * 10) / 10 + ")", 560, 380 - 350 * ((mass) / initialMass));
+
+            //Equation
+            ctx.font = "15px ariel";
+            ctx.textAlign = "start";
+            ctx.fillText("activity (J) = " + Math.round(lambda * 100) / 100 + " * " + massEquation, 340, 20);
+            var equationLength = ctx.measureText("activity (J) = " + Math.round(lambda * 100) / 100 + " * " + massEquation).width;
+            ctx.font = "8px ariel";
+            ctx.fillText("-" + Math.round(lambda * 100) / 100 + " * time", 340 + equationLength, 10);
+
+            //Labels
+            ctx.font = "15px ariel";
+            ctx.textAlign = "center";
+            ctx.fillText("A", 300, 185);
+            ctx.fillText("time", 450, 395);
+            
+        }
+
+        function startDecay() {
+
+            if (!paused) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                massGraph();
+                time += (intervalSpeed / (1000)) * stepSpeed;
+                console.log(time);
+                
+            }
+
+
+        }
+
+        function pauseDecay() {
+            if (!paused) {
+                doc.getElementById("pause/play").innerHTML = "Play";
+                paused = true;
+            } else {
+                doc.getElementById("pause/play").innerHTML = "Pause";
+                paused = false;
+            }
+        }
+    </script>
+</body>
+
+</html>
